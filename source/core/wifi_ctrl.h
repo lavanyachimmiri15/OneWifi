@@ -57,6 +57,8 @@ extern "C" {
 
 #define WIFI_BUS_WIFIAPI_COMMAND           "Device.WiFi.WiFiAPI.command"
 #define WIFI_BUS_WIFIAPI_RESULT            "Device.WiFi.WiFiAPI.result"
+/* Synchronous WiFi HAL call method for external IPC */
+#define WIFI_BUS_WIFIAPI_CALL              "Device.WiFi.WiFiAPI.call"
 
 #define WIFI_NORMALIZED_RSSI_LIST          "Device.DeviceInfo.X_RDKCENTRAL-COM_WIFI_TELEMETRY.NormalizedRssiList"
 #define WIFI_SNR_LIST                      "Device.DeviceInfo.X_RDKCENTRAL-COM_WIFI_TELEMETRY.SNRList"

@@ -36,6 +36,11 @@
 #define MAX_STR_LEN 128
 #define MAX_STATUS_LEN 5
 
+/* forward declaration from wifi_ctrl_wifiapi_handlers.c */
+extern void process_wifiapi_command(char *command, unsigned int len);
+
+bus_error_t wifiapi_call_method(const char *methodName, raw_data_t *inParams, raw_data_t *outParams, void *asyncHandle);
+
 
 static int get_subdoc_type(wifi_provider_response_t *response, webconfig_subdoc_type_t *subdoc,
     char *eventName)
@@ -3635,6 +3640,10 @@ void bus_register_handlers(wifi_ctrl_t *ctrl)
                                 { WIFI_BUS_WIFIAPI_COMMAND, bus_element_type_method,
                                     { NULL, set_wifiapi_command, NULL, NULL, NULL, NULL }, slow_speed, ZERO_TABLE,
                                     { bus_data_type_string, true, 0, 0, 0, NULL } },
+                                /* Synchronous WiFi HAL call method */
+                                { WIFI_BUS_WIFIAPI_CALL, bus_element_type_method,
+                                    { NULL, NULL, NULL, NULL, NULL, wifiapi_call_method }, slow_speed, ZERO_TABLE,
+                                    { bus_data_type_string, true, 0, 0, 0, NULL } },
                                 { WIFI_BUS_WIFIAPI_RESULT, bus_element_type_event,
                                     { NULL, NULL, NULL, NULL, wifiapi_event_handler, NULL}, slow_speed, ZERO_TABLE,
                                     { bus_data_type_string, false, 0, 0, 0, NULL } },
@@ -3770,4 +3779,56 @@ void bus_register_handlers(wifi_ctrl_t *ctrl)
     wifi_util_info_print(WIFI_CTRL, "%s bus: bus event register:[%s]:%s\r\n", __FUNCTION__,
         WIFI_STA_2G_VAP_CONNECT_STATUS, WIFI_STA_5G_VAP_CONNECT_STATUS);
     return;
+}
+
+/*
+ * Synchronous WiFi HAL call method handler.
+ * Accepts a command string (e.g., "wifi_getRadioOperatingParameters 0")
+ * and returns the result string in outParams, while also publishing the standard
+ * WIFI_BUS_WIFIAPI_RESULT event for compatibility.
+ */
+bus_error_t wifiapi_call_method(const char *methodName, raw_data_t *inParams, raw_data_t *outParams, void *asyncHandle)
+{
+    (void)methodName;
+    (void)asyncHandle;
+
+    wifi_ctrl_t *ctrl = (wifi_ctrl_t *)get_wifictrl_obj();
+    if (ctrl == NULL || inParams == NULL || outParams == NULL) {
+        wifi_util_error_print(WIFI_CTRL, "%s:%d NULL inputs\n", __func__, __LINE__);
+        return bus_error_invalid_input;
+    }
+
+    if (inParams->data_type != bus_data_type_string || inParams->raw_data.bytes == NULL) {
+        wifi_util_error_print(WIFI_CTRL, "%s:%d invalid input type:%d\n", __func__, __LINE__, inParams->data_type);
+        return bus_error_invalid_input;
+    }
+
+    char *cmd = (char *)inParams->raw_data.bytes;
+    unsigned int len = (inParams->raw_data_len > 0) ? inParams->raw_data_len : (unsigned int)strlen(cmd);
+
+    /* Execute via existing async path; it will set ctrl->wifiapi.result and publish result event */
+    process_wifiapi_command(cmd, len);
+
+    /* Return result synchronously */
+    outParams->data_type = bus_data_type_string;
+    if (ctrl->wifiapi.result == NULL) {
+        const char *fallback = "Result is not available";
+        size_t flen = strlen(fallback);
+        outParams->raw_data.bytes = calloc(flen + 1, sizeof(char));
+        if (outParams->raw_data.bytes == NULL) {
+            return bus_error_out_of_resources;
+        }
+        memcpy(outParams->raw_data.bytes, fallback, flen);
+        outParams->raw_data_len = (unsigned int)flen;
+    } else {
+        size_t rlen = strlen(ctrl->wifiapi.result);
+        outParams->raw_data.bytes = calloc(rlen + 1, sizeof(char));
+        if (outParams->raw_data.bytes == NULL) {
+            return bus_error_out_of_resources;
+        }
+        memcpy(outParams->raw_data.bytes, ctrl->wifiapi.result, rlen);
+        outParams->raw_data_len = (unsigned int)rlen;
+    }
+
+    return bus_error_success;
 }
