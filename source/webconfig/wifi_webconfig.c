@@ -219,6 +219,25 @@ webconfig_error_t webconfig_set(webconfig_t *config, webconfig_subdoc_data_t *da
             wifi_util_error_print(WIFI_WEBCONFIG, "%s:%d Subdocument apply failed\n", __func__, __LINE__);
             err = webconfig_error_apply;
         }
+        //printing count of associated devices and associated_diff_devices
+        webconfig_subdoc_decoded_data_t *decoded_params;
+        wifi_vap_info_map_t *vap_map;
+        rdk_wifi_vap_info_t *rdk_vap_info;
+        unsigned int i = 0, j = 0;
+        
+        decoded_params = &data->u.decoded;
+        for (i = 0; i < decoded_params->num_radios; i++) {
+            vap_map = &decoded_params->radios[i].vaps.vap_map;
+            for (j = 0; j < vap_map->num_vaps; j++) {
+            rdk_vap_info = &decoded_params->radios[i].vaps.rdk_vap_array[j];
+            if (rdk_vap_info == NULL) {
+                wifi_util_error_print(WIFI_WEBCONFIG, "%s:%d: rdk_vap_info is NULL\n", __func__, __LINE__);
+                continue;
+            }
+            wifi_util_error_print(WIFI_WEBCONFIG, "%s:%d: count of associated devices: %d\n", __func__, __LINE__, hash_map_count(rdk_vap_info->associated_devices_map));
+            wifi_util_error_print(WIFI_WEBCONFIG, "%s:%d: count of associated diff devices: %d\n", __func__, __LINE__, hash_map_count(rdk_vap_info->associated_devices_diff_map));
+        }
+        }
     }
 
 

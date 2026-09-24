@@ -266,7 +266,7 @@ webconfig_error_t decode_associated_clients_subdoc(webconfig_t *config, webconfi
     webconfig_subdoc_decoded_data_t *params;
     cJSON *obj_vaps;
     cJSON *json;
-    rdk_wifi_vap_info_t *rdk_vap_info;
+    rdk_wifi_vap_info_t *rdk_vap_info = NULL;
     wifi_vap_info_map_t *vap_map;
     unsigned int i = 0, j = 0;
     assoc_dev_data_t *assoc_dev_data, *temp_assoc_dev_data;
@@ -291,6 +291,8 @@ webconfig_error_t decode_associated_clients_subdoc(webconfig_t *config, webconfi
             rdk_vap_info = &params->radios[i].vaps.rdk_vap_array[j];
             if (rdk_vap_info != NULL) {
                 //if not ovsdb setto associated_devices_map
+                if (rdk_vap_info->associated_devices_map != NULL)
+                wifi_util_info_print(WIFI_WEBCONFIG, "%s:%d: count of associated devices: %d\n", __func__, __LINE__, hash_map_count(rdk_vap_info->associated_devices_map));
                 if ((data->descriptor & webconfig_data_descriptor_translate_to_ovsdb) != webconfig_data_descriptor_translate_to_ovsdb) {
                     rdk_vap_info->associated_devices_map = NULL;
                 } else {
@@ -372,6 +374,7 @@ webconfig_error_t decode_associated_clients_subdoc(webconfig_t *config, webconfi
             return webconfig_error_decode;
     }
 
+    wifi_util_info_print(WIFI_WEBCONFIG, "%s:%d: count of associated devices: %d\n", __func__, __LINE__, hash_map_count(rdk_vap_info->associated_devices_map));
     wifi_util_info_print(WIFI_WEBCONFIG, "%s:%d: decode success\n", __func__, __LINE__);
 
     cJSON_Delete(json);

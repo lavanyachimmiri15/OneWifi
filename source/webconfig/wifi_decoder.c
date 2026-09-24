@@ -3988,6 +3988,7 @@ webconfig_error_t decode_associated_clients_object(webconfig_subdoc_data_t *data
             }
         }
     }
+    wifi_util_info_print(WIFI_WEBCONFIG, "%s:%d: count of associated devices: %d\n", __func__, __LINE__, hash_map_count(rdk_vap_info->associated_devices_map));
 
     return webconfig_error_none;
 }
