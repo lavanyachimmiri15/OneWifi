@@ -3988,7 +3988,6 @@ webconfig_error_t decode_associated_clients_object(webconfig_subdoc_data_t *data
             }
         }
     }
-
     return webconfig_error_none;
 }
 webconfig_error_t decode_link_report(cJSON *json,report_batch_t **out_report)
